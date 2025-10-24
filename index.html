@@ -1,255 +1,402 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>9-Instrument Drumpos</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Noise Watcher — Modern, Low‑Latency + Diagnostics</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #111;
-      color: white;
-      margin: 0;
-      padding: 0;
+    :root{
+      --bg:#0b0f17; --card:#0f1522; --ink:#e6edf7; --muted:#9aa4b2;
+      --ok:#16a34a; --warn:#f59e0b; --bad:#ef4444; --info:#2563eb;
+      --accent1:#22c55e; --accent2:#fde047; --accent3:#ef4444;
     }
-    h1 {margin: 15px 0; font-size: 22px;}
-    p {margin: 4px 0; font-size: 14px;}
-    .drum-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 15px;
-      margin-top: 10px;
-    }
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-    }
-    button {
-      width: 90px; height: 90px;
-      font-size: 13px; font-weight: bold;
-      border: none; border-radius: 12px;
-      background: linear-gradient(145deg,#444,#222);
-      color: white; cursor: pointer;
-      box-shadow: 3px 3px 6px #000;
-      transition: 0.1s;
-      touch-action: manipulation;
-    }
-    button:active {background: #f39c12; transform: scale(0.95);}
-    .controls {
-      margin-top: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-    .controls button {
-      width: 140px; height: 45px;
-      font-size: 15px; border-radius: 10px;
-    }
-    .slider-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-    input[type="range"] {
-      width: 200px;
-    }
-    @media (orientation: landscape) {
-      body {font-size: 16px;}
-      button {width: 100px; height: 100px; font-size: 14px;}
-      .controls {flex-direction: row; gap: 20px;}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Segoe UI,Roboto,Ubuntu,sans-serif}
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    h1{font-size:22px;margin:8px 0 12px}
+    .tabs{display:flex;gap:8px;margin:6px 0 12px}
+    .tab{flex:1;text-align:center;padding:12px;border-radius:12px;background:#0e1420;border:1px solid #192338;cursor:pointer}
+    .tab.active{background:#111a2c;border-color:#22314d}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .card{background:var(--card);border:1px solid #162039;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 12px #00000040}
+    .btn{border:0;border-radius:12px;padding:12px 14px;color:#fff;background:linear-gradient(135deg,#3b82f6,#2563eb);cursor:pointer;font-weight:600}
+    .btn:active{transform:translateY(1px)}
+    .btn.stop{background:linear-gradient(135deg,#f87171,#ef4444)}
+    .btn.reset{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#111}
+    .btn.ghost{background:#0e1420;border:1px solid #1b2843;color:#cbd5e1}
+    label{font-size:13px;color:var(--muted)}
+    input[type=range]{width:220px}
+    input[type=number],select{background:#0e1420;border:1px solid #1b2843;color:var(--ink);padding:10px;border-radius:10px;min-width:88px}
+    .meter{height:12px;background:#111827;border-radius:999px;overflow:hidden}
+    .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent1),var(--accent2),var(--accent3))}
+    canvas{width:100%;height:220px;background:#060a14;border-radius:14px;display:block}
+    .kv{display:grid;grid-template-columns:140px 1fr;gap:6px;margin:6px 0}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .muted{color:var(--muted)}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #1b2843;background:#0e1420;font-size:12px}
+    @media (max-width:560px){
+      input[type=range]{width:100%}
+      .kv{grid-template-columns:1fr}
     }
   </style>
 </head>
 <body>
-  <h1>🥁 9-Instrument Drumpos</h1>
-  <p>Row 1 = Left, Row 2 = Right, Row 3 = Center</p>
-  <p>Tap once to unlock sound, then play!</p>
+  <div class="wrap">
+    <h1>Noise Watcher — Modern, Low‑Latency + Diagnostics</h1>
 
-  <div class="drum-container">
-    <div class="row">
-      <button onclick="triggerPlay('kick','left')">Kick</button>
-      <button onclick="triggerPlay('snare','left')">Snare</button>
-      <button onclick="triggerPlay('hihat','left')">Hi-Hat</button>
-      <button onclick="triggerPlay('tom1','left')">Tom 1</button>
-      <button onclick="triggerPlay('tom2','left')">Tom 2</button>
-      <button onclick="triggerPlay('crash','left')">Crash</button>
-      <button onclick="triggerPlay('ride','left')">Ride</button>
-      <button onclick="triggerPlay('clap','left')">Clap</button>
-      <button onclick="triggerPlay('cowbell','left')">Cowbell</button>
+    <div class="tabs">
+      <div id="tabMonitor" class="tab active">Monitor</div>
+      <div id="tabDiag" class="tab">Diagnostics</div>
     </div>
-    <div class="row">
-      <button onclick="triggerPlay('kick','right')">Kick</button>
-      <button onclick="triggerPlay('snare','right')">Snare</button>
-      <button onclick="triggerPlay('hihat','right')">Hi-Hat</button>
-      <button onclick="triggerPlay('tom1','right')">Tom 1</button>
-      <button onclick="triggerPlay('tom2','right')">Tom 2</button>
-      <button onclick="triggerPlay('crash','right')">Crash</button>
-      <button onclick="triggerPlay('ride','right')">Ride</button>
-      <button onclick="triggerPlay('clap','right')">Clap</button>
-      <button onclick="triggerPlay('cowbell','right')">Cowbell</button>
-    </div>
-    <div class="row">
-      <button onclick="triggerPlay('kick','center')">Kick</button>
-      <button onclick="triggerPlay('snare','center')">Snare</button>
-      <button onclick="triggerPlay('hihat','center')">Hi-Hat</button>
-      <button onclick="triggerPlay('tom1','center')">Tom 1</button>
-      <button onclick="triggerPlay('tom2','center')">Tom 2</button>
-      <button onclick="triggerPlay('crash','center')">Crash</button>
-      <button onclick="triggerPlay('ride','center')">Ride</button>
-      <button onclick="triggerPlay('clap','center')">Clap</button>
-      <button onclick="triggerPlay('cowbell','center')">Cowbell</button>
-    </div>
-  </div>
 
-  <div class="controls">
-    <button onclick="enableLoop()">Enable Loop</button>
-    <button onclick="stopLoop()">Stop Loop</button>
-    <div class="slider-container">
-      <label for="tempo">Tempo: <span id="tempoVal">120</span> BPM</label>
-      <input type="range" id="tempo" min="40" max="240" value="120" oninput="updateTempo(this.value)">
-    </div>
+    <!-- MONITOR SCREEN -->
+    <section id="screenMonitor">
+      <div class="card">
+        <div class="row">
+          <button id="btnStart" class="btn">Start Monitoring</button>
+          <button id="btnStop" class="btn stop" disabled>Stop</button>
+          <button id="btnReset" class="btn reset">Reset Alarm</button>
+          <button id="btnTest" class="btn ghost">Test Alarm</button>
+          <span class="pill" id="status">Idle</span>
+        </div>
+        <div class="meter" style="margin-top:10px"><div class="bar" id="levelBar"></div></div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <label>Threshold (dB)
+            <input id="inpThreshold" type="range" min="-90" max="0" step="1" value="-30">
+          </label>
+          <span class="mono" id="lblThreshold">-30 dB</span>
+
+          <label>Min dB
+            <input id="inpMin" type="number" value="-90" step="1">
+          </label>
+          <label>Max dB
+            <input id="inpMax" type="number" value="0" step="1">
+          </label>
+
+          <label>Required Peaks
+            <input id="inpPeaks" type="number" value="3" min="1" max="10">
+          </label>
+          <label>Peak Window (s)
+            <input id="inpWindow" type="number" value="6" min="1" max="30">
+          </label>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <label>Alarm Volume
+            <input id="inpVol" type="range" min="0" max="100" value="60">
+          </label>
+          <span class="mono" id="lblVol">60%</span>
+          <label>Alarm Type
+            <select id="selAlarm">
+              <option value="high">High Pitch (3kHz saw)</option>
+              <option value="low">Low Buzz (200Hz square)</option>
+              <option value="warble" selected>Warble (800↔1500Hz)</option>
+              <option value="steady">Steady (1kHz sine)</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row" style="justify-content:space-between;align-items:flex-end">
+          <div>
+            <div class="muted">Live level</div>
+            <div class="mono" id="lblDb">-∞ dB</div>
+          </div>
+          <div class="muted">Last 60s history</div>
+        </div>
+        <canvas id="cv"></canvas>
+        <div class="muted" style="margin-top:8px">Reference ranges: <span class="pill">30 dB Whisper</span> <span class="pill">50 dB Quiet Home</span> <span class="pill">60 dB Conversation</span> <span class="pill">80 dB Traffic</span> <span class="pill">100 dB Loud Music</span></div>
+      </div>
+    </section>
+
+    <!-- DIAGNOSTICS SCREEN -->
+    <section id="screenDiag" style="display:none">
+      <div class="card">
+        <div class="row">
+          <div class="kv"><div class="muted">Secure Context</div><div id="kvSecure" class="mono">…</div></div>
+          <div class="kv"><div class="muted">Permission</div><div id="kvPerm" class="mono">…</div></div>
+          <div class="kv"><div class="muted">Hidden/Throttled</div><div id="kvHidden" class="mono">…</div></div>
+          <div class="kv"><div class="muted">Sample Rate</div><div id="kvSR" class="mono">…</div></div>
+          <div class="kv"><div class="muted">Base Latency</div><div id="kvBL" class="mono">…</div></div>
+          <div class="kv"><div class="muted">Output Latency</div><div id="kvOL" class="mono">…</div></div>
+          <div class="kv"><div class="muted">FPS (1s avg)</div><div id="kvFPS" class="mono">…</div></div>
+          <div class="kv"><div class="muted">Frame Time (ms)</div><div id="kvFT" class="mono">…</div></div>
+          <div class="kv"><div class="muted">Heap Used</div><div id="kvMem" class="mono">…</div></div>
+          <div class="kv"><div class="muted">Analyzer fftSize</div><div id="kvFFT" class="mono">…</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="muted">Why sluggish?</div>
+        <ul style="margin-top:6px">
+          <li>🔒 Not served over HTTPS (mic blocked or delayed).</li>
+          <li>🛑 Permission denied once — browser caches “Block”. Clear or allow in Site Settings.</li>
+          <li>🧵 Page hidden / background tab (browsers throttle timers/canvas).</li>
+          <li>📈 Too large canvas or devicePixelRatio; reduce graph height on low-end phones.</li>
+          <li>🎚 High fftSize or smoothing — keep small for lower latency.</li>
+          <li>🔊 Bluetooth output may add output latency.</li>
+        </ul>
+      </div>
+    </section>
   </div>
 
   <script>
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    document.body.addEventListener("click", () => {
-      if (audioCtx.state === "suspended") audioCtx.resume();
-    }, { once: true });
+    // ====== Low-latency architecture ======
+    // - Create AudioContext on user gesture only; resume() immediately.
+    // - Use small fftSize (256) + no smoothing to reduce analysis latency.
+    // - rAF loop draws graph & computes RMS; minimal allocations, ring buffer for 60s.
+    // - DevicePixelRatio-aware canvas rendering for crisp but efficient drawing.
 
-    let loopInterval = null;
-    let lastPlayed = null;
-    let bpm = 120;
+    const el = (id)=>document.getElementById(id);
+    // Tabs
+    el('tabMonitor').onclick=()=>{el('tabMonitor').classList.add('active');el('tabDiag').classList.remove('active');el('screenMonitor').style.display='block';el('screenDiag').style.display='none'};
+    el('tabDiag').onclick=()=>{el('tabDiag').classList.add('active');el('tabMonitor').classList.remove('active');el('screenMonitor').style.display='none';el('screenDiag').style.display='block'};
 
-    function triggerPlay(type, position) {
-      lastPlayed = {type, position};
-      playSound(type, position);
+    // Controls
+    const btnStart=el('btnStart'), btnStop=el('btnStop'), btnReset=el('btnReset'), btnTest=el('btnTest');
+    const inpThreshold=el('inpThreshold'), lblThreshold=el('lblThreshold');
+    const inpMin=el('inpMin'), inpMax=el('inpMax');
+    const inpPeaks=el('inpPeaks'), inpWindow=el('inpWindow');
+    const inpVol=el('inpVol'), lblVol=el('lblVol');
+    const selAlarm=el('selAlarm');
+    const statusEl=el('status');
+
+    const bar=el('levelBar');
+    const cv=el('cv'); const g=cv.getContext('2d');
+
+    let audioCtx=null, analyser=null, mic=null, data=null, rafId=null;
+    let alarmGain=null, alarmNodes=[]; let alarming=false; let warbleTimer=null;
+    let ring=[], ringTime=[], ringCap=1800; // ~30 fps * 60s
+    let fpsTimes=[]; let lastFrameT=performance.now();
+
+    // Diagnostics elements
+    const kvSecure=el('kvSecure'), kvPerm=el('kvPerm'), kvHidden=el('kvHidden'), kvSR=el('kvSR'), kvBL=el('kvBL'), kvOL=el('kvOL'), kvFPS=el('kvFPS'), kvFT=el('kvFT'), kvMem=el('kvMem'), kvFFT=el('kvFFT');
+
+    // Helpers
+    const rmsToDb = (r)=> r<=1e-12? -100 : 20*Math.log10(r);
+    const clamp = (v,a,b)=> Math.min(b,Math.max(a,v));
+
+    function setStatus(txt, cls=''){
+      statusEl.textContent=txt; statusEl.className='pill '+cls;
     }
 
-    function enableLoop() {
-      if (!lastPlayed) {
-        alert("Play an instrument first, then enable loop.");
-        return;
+    function scaleCanvas(canvas){
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (canvas.width !== Math.round(w*dpr) || canvas.height !== Math.round(h*dpr)){
+        canvas.width = Math.round(w*dpr); canvas.height = Math.round(h*dpr);
       }
-      if (loopInterval) clearInterval(loopInterval);
-      const interval = (60000 / bpm); // ms per beat
-      loopInterval = setInterval(() => {
-        playSound(lastPlayed.type, lastPlayed.position);
-      }, interval);
+      return dpr;
     }
 
-    function stopLoop() {
-      clearInterval(loopInterval);
-      loopInterval = null;
+    function drawGraph(minDb, maxDb, threshold){
+      const dpr = scaleCanvas(cv);
+      const w=cv.width, h=cv.height; g.setTransform(1,0,0,1,0,0);
+      g.fillStyle = '#060a14'; g.fillRect(0,0,w,h);
+
+      // reference bands (approx guidance, not calibrated SPL)
+      const refs=[30,50,60,80,100];
+      g.globalAlpha = 0.10; g.fillStyle = '#22c55e'; drawHline(refs[0]);
+      g.fillStyle = '#c7a402'; drawHline(refs[1]);
+      g.fillStyle = '#f59e0b'; drawHline(refs[2]);
+      g.fillStyle = '#ef4444'; drawHline(refs[3]);
+      g.fillStyle = '#111';    drawHline(refs[4]);
+      g.globalAlpha = 1;
+      function drawHline(dbVal){
+        const y = h - ((dbVal - minDb)/(maxDb-minDb))*h; g.fillRect(0, clamp(y-1*dpr,0,h), w, 2*dpr);
+      }
+
+      // threshold line
+      const thY = h - ((threshold - minDb)/(maxDb-minDb))*h; g.strokeStyle='#38bdf8'; g.lineWidth=2*dpr; g.setLineDash([6*dpr,4*dpr]);
+      g.beginPath(); g.moveTo(0,thY); g.lineTo(w,thY); g.stroke(); g.setLineDash([]);
+
+      // series
+      g.strokeStyle='#22c55e'; g.lineWidth=2*dpr; g.beginPath();
+      const n=ring.length; if(n===0) return;
+      for(let i=0;i<n;i++){
+        const x = (i/(ringCap-1))*w;
+        const y = h - ((ring[i]-minDb)/(maxDb-minDb))*h;
+        if(i===0) g.moveTo(x,y); else g.lineTo(x,y);
+      }
+      g.stroke();
+
+      // time ticks (0..60s)
+      g.fillStyle='#1f2937';
+      for(let s=0;s<=60;s+=10){
+        const x = (s/60)*w; g.fillRect(x, h-6*dpr, 2*dpr, 6*dpr);
+      }
     }
 
-    function updateTempo(value) {
-      bpm = value;
-      document.getElementById("tempoVal").textContent = value;
-      if (loopInterval) { // adjust while looping
-        enableLoop();
+    function pushSample(db){
+      if (ring.length < ringCap) { ring.push(db); ringTime.push(performance.now()); }
+      else { ring.shift(); ring.push(db); ringTime.shift(); ringTime.push(performance.now()); }
+    }
+
+    async function start(){
+      try{
+        // Permission check info
+        const isHttps = location.protocol==='https:' || /^localhost|127\.0\.0\.1|\[::1\]$/.test(location.hostname);
+        kvSecure.textContent = isHttps? 'OK (secure)' : 'Not secure (use HTTPS or localhost)';
+
+        audioCtx = new (window.AudioContext||window.webkitAudioContext)({ latencyHint: 'interactive' });
+        await audioCtx.resume();
+
+        mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+        const src = audioCtx.createMediaStreamSource(mic);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256; // low latency
+        analyser.smoothingTimeConstant = 0.0;
+        src.connect(analyser);
+        data = new Float32Array(analyser.fftSize);
+
+        kvSR.textContent = audioCtx.sampleRate + ' Hz';
+        kvBL.textContent = (audioCtx.baseLatency? (audioCtx.baseLatency*1000).toFixed(1)+' ms' : 'n/a');
+        kvOL.textContent = (audioCtx.outputLatency? (audioCtx.outputLatency*1000).toFixed(1)+' ms' : 'n/a');
+        kvFFT.textContent = analyser.fftSize;
+        kvPerm.textContent = 'granted (assumed after getUserMedia)';
+
+        ring=[]; ringTime=[]; fpsTimes=[]; setStatus('Monitoring','');
+        btnStart.disabled=true; btnStop.disabled=false;
+        loop();
+      }catch(err){
+        setStatus('Mic denied','');
+        kvPerm.textContent = (err && err.name) ? err.name : 'denied';
+        alert('Microphone permission denied or unavailable.\nTip: serve over HTTPS and allow mic in Site Settings.');
+        stop();
       }
     }
 
-    function playSound(type, position) {
-      const panner = audioCtx.createStereoPanner();
-      if (position === 'left') panner.pan.value = -1;
-      else if (position === 'right') panner.pan.value = 1;
-      else panner.pan.value = 0;
-
-      if (type === 'kick') {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain).connect(panner).connect(audioCtx.destination);
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(120, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.12);
-        gain.gain.setValueAtTime(1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.12);
-      }
-      else if (type === 'snare') {
-        const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < output.length; i++) output[i] = Math.random() * 2 - 1;
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = noiseBuffer;
-        const noiseGain = audioCtx.createGain();
-        noiseGain.gain.setValueAtTime(1, audioCtx.currentTime);
-        noiseGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-        const bandpass = audioCtx.createBiquadFilter();
-        bandpass.type = "bandpass"; bandpass.frequency.value = 1800;
-        noise.connect(bandpass).connect(noiseGain).connect(panner).connect(audioCtx.destination);
-        noise.start(); noise.stop(audioCtx.currentTime + 0.15);
-      }
-      else if (type === 'hihat' || type === 'ride') {
-        const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < output.length; i++) output[i] = Math.random() * 2 - 1;
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = noiseBuffer;
-        const highpass = audioCtx.createBiquadFilter();
-        highpass.type = "highpass"; highpass.frequency.value = (type === 'hihat') ? 6000 : 3000;
-        const noiseGain = audioCtx.createGain();
-        noiseGain.gain.setValueAtTime(0.6, audioCtx.currentTime);
-        noiseGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + ((type === 'hihat') ? 0.05 : 0.3));
-        noise.connect(highpass).connect(noiseGain).connect(panner).connect(audioCtx.destination);
-        noise.start(); noise.stop(audioCtx.currentTime + ((type === 'hihat') ? 0.05 : 0.3));
-      }
-      else if (type === 'crash') {
-        const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 1.5, audioCtx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < output.length; i++) output[i] = Math.random() * 2 - 1;
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = noiseBuffer;
-        const highpass = audioCtx.createBiquadFilter();
-        highpass.type = "highpass"; highpass.frequency.value = 4000;
-        const noiseGain = audioCtx.createGain();
-        noiseGain.gain.setValueAtTime(1, audioCtx.currentTime);
-        noiseGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.0);
-        noise.connect(highpass).connect(noiseGain).connect(panner).connect(audioCtx.destination);
-        noise.start(); noise.stop(audioCtx.currentTime + 1.0);
-      }
-      else if (type === 'clap') {
-        const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.15, audioCtx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < output.length; i++) output[i] = Math.random() * 2 - 1;
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = noiseBuffer;
-        const bandpass = audioCtx.createBiquadFilter();
-        bandpass.type = "bandpass"; bandpass.frequency.value = 2000;
-        const gain = audioCtx.createGain();
-        gain.gain.setValueAtTime(1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-        noise.connect(bandpass).connect(gain).connect(panner).connect(audioCtx.destination);
-        noise.start(); noise.stop(audioCtx.currentTime + 0.1);
-      }
-      else if (type === 'cowbell') {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain).connect(panner).connect(audioCtx.destination);
-        osc.type = "square";
-        osc.frequency.setValueAtTime(540, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.7, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.25);
-      }
-      else { // toms
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain).connect(panner).connect(audioCtx.destination);
-        osc.type = "sine";
-        osc.frequency.value = type === 'tom1' ? 200 : 120;
-        gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-      }
+    function stop(){
+      if(rafId) cancelAnimationFrame(rafId); rafId=null;
+      if(mic){ try{ mic.getTracks().forEach(t=>t.stop()); }catch{} mic=null; }
+      if(audioCtx){ try{ audioCtx.close(); }catch{} audioCtx=null; }
+      if (warbleTimer){ clearInterval(warbleTimer); warbleTimer=null; }
+      stopAlarm();
+      btnStart.disabled=false; btnStop.disabled=true; setStatus('Idle','');
     }
+
+    function loop(){
+      const t0=performance.now();
+      analyser.getFloatTimeDomainData(data);
+      let sum=0; for(let i=0;i<data.length;i++){ const v=data[i]; sum += v*v; }
+      const rms = Math.sqrt(sum/data.length);
+      const db = rmsToDb(rms);
+
+      // UI small updates
+      el('lblDb').textContent = (isFinite(db)? db.toFixed(1) : '-∞') + ' dB';
+      const minDb = parseFloat(inpMin.value), maxDb=parseFloat(inpMax.value); // user scale
+      const pct = clamp(((db - minDb)/(maxDb-minDb))*100, 0, 100);
+      bar.style.width = pct + '%';
+
+      // peaks logic
+      const threshold = parseFloat(inpThreshold.value);
+      lblThreshold.textContent = threshold + ' dB';
+      // sliding peak window counter
+      const now = performance.now();
+      // store only logical crossings (above threshold) into a short array
+      if (db >= threshold) {
+        // record a timestamp and purge old
+        if (!loop.peakTimes) loop.peakTimes = [];
+        const win = Math.max(1,parseFloat(inpWindow.value))*1000;
+        loop.peakTimes = loop.peakTimes.filter(ts => now - ts <= win);
+        // debounce tiny oscillations: only push if last push > analysis period
+        if (!loop.peakTimes.length || now - loop.peakTimes[loop.peakTimes.length-1] > 150){
+          loop.peakTimes.push(now);
+        }
+        if (loop.peakTimes.length >= Math.max(1,parseInt(inpPeaks.value))) {
+          if (!alarming) triggerAlarm();
+        }
+      }
+
+      // history ring
+      pushSample(db);
+      drawGraph(minDb, maxDb, threshold);
+
+      // Diagnostics
+      const t1=performance.now(), dur=t1-t0; kvFT.textContent = dur.toFixed(2);
+      fpsTimes.push(t1); while(fpsTimes.length>60 && (t1 - fpsTimes[0])>1000){ fpsTimes.shift(); }
+      const fps = fpsTimes.length / ((fpsTimes.length>1? (fpsTimes[fpsTimes.length-1]-fpsTimes[0]) : 1000)/1000);
+      kvFPS.textContent = (isFinite(fps)? fps.toFixed(1) : '—');
+      kvHidden.textContent = document.hidden? 'Hidden (throttled)' : 'Visible';
+      if (performance && performance.memory) kvMem.textContent = (performance.memory.usedJSHeapSize/1048576).toFixed(0)+' MB';
+
+      rafId = requestAnimationFrame(loop);
+    }
+
+    // ===== Alarm system (oscillators only, no files) =====
+    function ensureCtx(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); audioCtx.resume(); }
+
+    function setAlarmGain(v){ if (alarmGain) alarmGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.01); }
+
+    function triggerAlarm(){
+      ensureCtx(); alarming=true; setStatus('ALARM ACTIVE','');
+      if (alarmGain) { try{alarmGain.disconnect();}catch{} }
+      alarmGain = audioCtx.createGain();
+      setAlarmGain(parseInt(inpVol.value)/100);
+      alarmGain.connect(audioCtx.destination);
+
+      // choose profile
+      const type = selAlarm.value;
+      stopAlarmNodes();
+      if (type==='high') {
+        const o = audioCtx.createOscillator(); o.type='sawtooth'; o.frequency.value=3000; o.connect(alarmGain); o.start(); alarmNodes=[o];
+      } else if (type==='low') {
+        const o = audioCtx.createOscillator(); o.type='square'; o.frequency.value=200; o.connect(alarmGain); o.start(); alarmNodes=[o];
+      } else if (type==='steady') {
+        const o = audioCtx.createOscillator(); o.type='sine'; o.frequency.value=1000; o.connect(alarmGain); o.start(); alarmNodes=[o];
+      } else { // warble
+        const o = audioCtx.createOscillator(); o.type='square'; o.frequency.value=800; o.connect(alarmGain); o.start(); alarmNodes=[o];
+        if (warbleTimer) clearInterval(warbleTimer);
+        warbleTimer = setInterval(()=>{ o.frequency.value = (o.frequency.value===800?1500:800); }, 180);
+      }
+
+      // staccato bursts to increase urgency
+      const g = alarmGain.gain; const burstMs=350, gapMs=700;
+      function burst(){ if(!alarming) return; const t=audioCtx.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(0.0001, t); g.exponentialRampToValueAtTime(parseInt(inpVol.value)/100, t+0.02); g.exponentialRampToValueAtTime(0.0001, t+burstMs/1000); }
+      burst(); triggerAlarm._id = setInterval(burst, gapMs);
+    }
+
+    function stopAlarmNodes(){
+      if (alarmNodes && alarmNodes.length){ alarmNodes.forEach(n=>{ try{n.stop();}catch{} try{n.disconnect();}catch{} }); }
+      alarmNodes=[];
+    }
+
+    function stopAlarm(){
+      if (triggerAlarm._id){ clearInterval(triggerAlarm._id); triggerAlarm._id=null; }
+      if (warbleTimer){ clearInterval(warbleTimer); warbleTimer=null; }
+      stopAlarmNodes();
+      if (alarmGain){ try{alarmGain.disconnect();}catch{} alarmGain=null; }
+      alarming=false; setStatus(mic? 'Monitoring':'Idle','');
+    }
+
+    // Handlers
+    btnStart.onclick = start;
+    btnStop.onclick  = stop;
+    btnReset.onclick = ()=>{ stopAlarm(); if (loop.peakTimes) loop.peakTimes.length=0; };
+    btnTest.onclick  = ()=>{ if(alarming) stopAlarm(); else triggerAlarm(); };
+
+    inpVol.oninput = ()=>{ lblVol.textContent = inpVol.value+'%'; if (alarmGain && audioCtx) setAlarmGain(parseInt(inpVol.value)/100); };
+
+    // Permissions API info (does not request!)
+    (async()=>{
+      try{
+        if(navigator.permissions && navigator.permissions.query){
+          const h = await navigator.permissions.query({name:'microphone'});
+          kvPerm.textContent = h.state; h.onchange = ()=> kvPerm.textContent = h.state;
+        }
+      }catch{}
+    })();
+
+    document.addEventListener('visibilitychange', ()=>{ kvHidden.textContent = document.hidden? 'Hidden (throttled)':'Visible'; });
+
+    // Initialize UI labels
+    lblThreshold.textContent = inpThreshold.value + ' dB';
+    lblVol.textContent = inpVol.value + '%';
+
+    // Fill ring buffer with baseline so graph starts drawn
+    for (let i=0;i<ringCap;i++) ring.push(-90);
   </script>
 </body>
 </html>
